@@ -2,13 +2,11 @@ import pandas as pd
 import requests
 from datetime import datetime
 import pytz
-import os
 
 # --- Config ---
 TOKEN = "8256439502:AAHtuLFtIFXoByvOP_5SrDrX-_BKZjVV0ZQ"
 CHAT_ID = "6893797334"
 CSV_FILE = "Vocab.csv"
-INDEX_FILE = "last_index.txt"
 
 # --- Load CSV ---
 try:
@@ -20,26 +18,23 @@ except Exception as e:
     print(f"Error loading CSV: {e}")
     exit(1)
 
-# --- Load last index ---
-if os.path.exists(INDEX_FILE):
-    with open(INDEX_FILE, 'r') as f:
-        last_index = int(f.read().strip())
-else:
-    last_index = -1  # start before first word
-
-# --- Determine next index ---
-next_index = (last_index + 1) % total_words  # wrap around after last word
-
-# --- Get current hour in IST ---
+# --- Current time in IST ---
 tz = pytz.timezone("Asia/Kolkata")
 now = datetime.now(tz)
 hour = now.hour
+day_number = now.timetuple().tm_yday  # Day of the year (1-366)
 
-# --- Send only between 10 AM - 11 PM IST ---
+# --- Calculate index without TXT ---
+# Each day: 10 AM to 11 PM = 14 words
+# Total words sent so far = (day_number - start_day) * 14 + (hour - 10)
+start_day = 1  # or change to the day you start
 if 10 <= hour <= 23:
-    word = df.iloc[next_index]['Word']
-    meaning = df.iloc[next_index]['Meaning']
-    example = df.iloc[next_index]['Example']
+    total_hours_passed = (day_number - start_day) * 14 + (hour - 10)
+    index = total_hours_passed % total_words
+
+    word = df.iloc[index]['Word']
+    meaning = df.iloc[index]['Meaning']
+    example = df.iloc[index]['Example']
 
     # --- Send Telegram message ---
     message = f"📚 Word of the Hour:\n\n*{word}*\nMeaning: {meaning}\nExample: {example}"
@@ -53,9 +48,6 @@ if 10 <= hour <= 23:
         response = requests.post(url, data=payload)
         if response.status_code == 200:
             print(f"Message sent successfully: {word}")
-            # --- Save last index ---
-            with open(INDEX_FILE, 'w') as f:
-                f.write(str(next_index))
         else:
             print(f"Failed to send message: {response.text}")
     except Exception as e:
