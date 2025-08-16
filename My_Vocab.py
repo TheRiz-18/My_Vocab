@@ -22,22 +22,25 @@ except Exception as e:
 tz = pytz.timezone("Asia/Kolkata")
 now = datetime.now(tz)
 hour = now.hour
-day_number = now.timetuple().tm_yday  # Day of the year (1-366)
+minute = now.minute
 
-# --- Calculate index without TXT ---
-# Each day: 10 AM to 11 PM = 14 words
-# Total words sent so far = (day_number - start_day) * 14 + (hour - 10)
-start_day = 1  # or change to the day you start
+# --- Only send between 10 AM - 11 PM IST ---
 if 10 <= hour <= 23:
-    total_hours_passed = (day_number - start_day) * 14 + (hour - 10)
-    index = total_hours_passed % total_words
+    # Each hour has 2 slots: :00 and :30
+    half_hour_index = 0 if minute < 30 else 1
+
+    # Calculate total half-hour periods passed since 10 AM
+    total_half_hours = (hour - 10) * 2 + half_hour_index
+
+    # Index in CSV
+    index = total_half_hours % total_words
 
     word = df.iloc[index]['Word']
     meaning = df.iloc[index]['Meaning']
     example = df.iloc[index]['Example']
 
     # --- Send Telegram message ---
-    message = f"📚 Word of the Hour:\n\n*{word}*\nMeaning: {meaning}\nExample: {example}"
+    message = f"📚 Word of the Hour:\n\n*{word}*\n\nMeaning: {meaning}\n\nExample: {example}"
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
