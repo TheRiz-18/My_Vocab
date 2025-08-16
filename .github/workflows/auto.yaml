@@ -2,7 +2,7 @@ name: Vocab Word of the Hour
 
 on:
   schedule:
-    - cron: '0,30 4-17 * * *'  # Runs at :00 and :30 UTC = 10:00 AM - 11:30 PM IST
+    - cron: '0,30 4-18 * * *'  # Runs at :00 and :30 UTC = 10:00 AM - 11:30 PM IST
   workflow_dispatch:  # Allows manual triggering
 
 jobs:
